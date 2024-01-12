@@ -1,0 +1,103 @@
+---
+title: "數位醫療"
+output:
+  html_document: default
+  pdf_document: default
+date: "2023-12-26"
+---
+
+```{r message=FALSE, warning=FALSE}
+library(readr)
+library(tableone)
+
+# 读取数据
+data <- read_csv("D:/大四上/數位醫療資料科學/project/jan_v1/data/data_by_table/pre_24h_data_v6.csv")
+
+# 查找RSBI列中的Inf和NaN
+inf_indices <- which(is.infinite(data$RSBI))
+#nan_indices <- which(is.nan(data$RSBI))
+
+# 计算Inf和NaN的数量
+num_inf <- length(inf_indices)
+#num_nan <- length(nan_indices)
+
+# 将Inf和NaN替换为NA
+data$RSBI[inf_indices] <- NA
+#data$RSBI[nan_indices] <- NA
+
+# 定位RSBI大于300的值
+high_rsbi_indices <- which(data$RSBI > 300)
+# 将这些值替换为NA
+data$RSBI[high_rsbi_indices] <- NA
+
+
+# 为特定种族类别替换
+data$race <- ifelse(grepl("^white", data$race, ignore.case = TRUE), "White", data$race)
+data$race <- ifelse(grepl("^asian", data$race, ignore.case = TRUE), "Asian", data$race)
+data$race <- ifelse(grepl("^black", data$race, ignore.case = TRUE), "Black", data$race)
+data$race <- ifelse(grepl("^hispanic", data$race, ignore.case = TRUE), "Hispanic", data$race)
+
+# 将不是上述四种的种族归类为others
+data$race <- ifelse(!data$race %in% c("White", "Asian", "Black", "Hispanic"), "Other", data$race)
+
+# 确定变量和分类变量
+myVars <- c('heart_rate', 'sbp', 'dbp', 'mbp', 'resp_rate', 'spo2','peep',
+              'fio2', 'tidal_volume_observed', 'respiratory_rate_set', 'plateau_pressure','GCS','age_now','gender', 'insurance',
+               'race', 'admission_type', 'first_careunit'
+                ,'BMI', 'tobacco','RSBI', 'minute_ventilation')
+catVars <- c("gender", "insurance", "race", "admission_type", "first_careunit", 'tobacco')
+
+# 创建表格
+tab3 <- CreateTableOne(vars = myVars, strata = "label", data = data, factorVars = catVars)
+
+# 打印表格
+print(tab3,  formatOptions = list(big.mark = ","), showAllLevels = TRUE)
+
+```
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(skimr)
+
+# 查找RSBI列中的Inf和NaN
+inf_indices <- which(is.infinite(data$RSBI))
+nan_indices <- which(is.nan(data$RSBI))
+
+# 计算Inf和NaN的数量
+num_inf <- length(inf_indices)
+num_nan <- length(nan_indices)
+
+# 将Inf和NaN替换为NA
+data$RSBI[inf_indices] <- NA
+data$RSBI[nan_indices] <- NA
+
+# 定位RSBI大于300的值
+high_rsbi_indices <- which(data$RSBI > 300)
+# 将这些值替换为NA
+data$RSBI[high_rsbi_indices] <- NA
+
+skim_data <- skim(data)
+print(skim_data)
+```
+
+```{r}
+# 安装和加载ggplot2包
+if(!require(ggplot2)) install.packages("ggplot2")
+library(ggplot2)
+
+# 绘制箱线图
+ggplot(data, aes(x = "", y = RSBI)) + 
+    geom_boxplot() +
+    theme_minimal() +
+    xlab("RSBI") + 
+    ylab("Value") +
+    ggtitle("Boxplot of RSBI")
+
+# 绘制箱线图
+boxplot(data$RSBI, 
+        main = "Boxplot of RSBI", 
+        ylab = "Value", 
+        xlab = "RSBI",
+        horizontal = FALSE,  # 设置为TRUE可以绘制水平箱线图
+        notch = FALSE)       # 设置为TRUE可以显示置信区间
+
+```
+
